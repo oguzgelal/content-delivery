@@ -2,5 +2,5 @@
 :- consult(facts/multi_small).
 
 % Include the rules file
-:- consult(rules).
+:- consult(rules/index).
 
