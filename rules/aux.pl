@@ -73,7 +73,7 @@ subtract_product([_|Rest], PID_Inventory, ProductInventoryAmount, NewProductInve
 
 %%%%%% Subtract the products in an order from an inventory %%%%%%
 % TODO: Complexity of this is O(n^2) -> is there a better way to do this ?
-% TODO: Omit pi/0
+% TODO: Omit pi/0 ?
 % TODO: Order different with the given variables. Why ?
 update_inventory(Inventory, OID, NewInventory):- update_inventory(Inventory, OID, NewInventory, []).
 update_inventory([], _, NewInventory, NewInventory).
