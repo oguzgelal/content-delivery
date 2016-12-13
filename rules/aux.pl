@@ -64,9 +64,9 @@ subtract_product([PID_Order/ProductOrderAmount|_], PID_Inventory, ProductInvento
     PID_Order == PID_Inventory, !,
     ProductInventoryAmount >= ProductOrderAmount,
     NewProductInventoryAmount is (ProductInventoryAmount - ProductOrderAmount),
-    subtract_product([], _, NewProductInventoryAmount, NewProductInventoryAmount). 
     % we're done here, no need to check the rest. Just call to recursion to jump into the base case.
-    % subtract_product([], _, _, NewProductInventoryAmount).
+    subtract_product([], _, NewProductInventoryAmount, NewProductInventoryAmount). 
+    
 subtract_product([_|Rest], PID_Inventory, ProductInventoryAmount, NewProductInventoryAmount):- 
     subtract_product(Rest, PID_Inventory, ProductInventoryAmount, NewProductInventoryAmount).
 
