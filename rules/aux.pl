@@ -9,11 +9,11 @@ distance(location(X1,Y1), location(X2,Y2), Distance):- Distance is (abs(X1 - X2)
 
 %%%%%% Calculate the driving duration between two orders/depots %%%%%%
 driving_duration(VID, FromID, ToID, Duration):-
-    vehicle(VID, _, _, KmInMin, _, _),
+    vehicle(VID, _, _, Pace, _, _),
     get_location(FromID, L1),
     get_location(ToID, L2),
     distance(L1, L2, Distance),
-    Duration is (Distance * KmInMin).
+    Duration is (Distance * Pace).
 
 %%%%%% Calculate product values given [PID/Amount] array %%%%%%
 calculate_earnings(Products, Value):-calculate_earnings(Products, 0.0, Value).
