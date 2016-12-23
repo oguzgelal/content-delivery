@@ -28,8 +28,10 @@ is_schedule_valid(schedule(VID, Day, [DID|RouteRest]), OrdersDelivered, OrdersDe
 
 %%%%%%%%%%%% Check if schedule time sufficient %%%%%%%%%%%%
 
-is_schedule_time_valid(schedule(VID, Day, Route)):- 
-    vehicle(VID, CurrentDepotID, _, _, _, _),
+is_schedule_time_valid(schedule(VID, Day, Route), States):- 
+    % Get the current state of 
+    % TODO : Add the states array support - should go up to is_valid's accumulator - closure is plan
+    get_state(VID, States, vargs(CurrentDepotID)),
     is_schedule_time_valid_acc(schedule(VID, Day, [CurrentDepotID|Route]), 0, 0).
 
 % If current stop is an order, update the count
