@@ -56,7 +56,7 @@ is_valid(plan([])).
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[]),schedule(v1,2,[]),schedule(v2,2,[]),schedule(v1,3,[]),schedule(v2,3,[])])).
 % o6 is delivered twice - DONE
 is_valid(plan([schedule(v1,1,[o6,d1]),schedule(v2,1,[]),schedule(v1,3,[o6,d1]),schedule(v2,3,[])])).
-%v1's delivery route takes too long on day 1.
+%v1's delivery route takes too long on day 1. - DONE BUT NOT WORKING (Do vehicles have to go somewhere at the end of the day ?)
 is_valid(plan([schedule(v2,1,[o6,d1]),schedule(v1,1,[o1,o8,d2]),schedule(v2,3,[o5,d2]),schedule(v1,3,[o2,o7,d2])])).
 %not enough of p1 is available in d2 to load o5. 
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[d2,o5,d2]),schedule(v1,3,[]),schedule(v2,3,[])])).

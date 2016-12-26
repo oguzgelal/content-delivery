@@ -1,3 +1,5 @@
+% Some utility functions
+:- consult(utils).
 % Include state functions
 :- consult(states).
 % Include the auxilary functions

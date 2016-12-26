@@ -26,3 +26,21 @@ update_state(state(ID, Args), StateArray, StateArrayNew):-
     get_state(ID, StateArray, StateOld),
     delete(StateArray, StateOld, StateArrayDeleted),
     append([state(ID, Args)], StateArrayDeleted, StateArrayNew).
+
+% Update the state with respect to the current schedule
+% This method runs after every check succeeds, so no need to check any validity
+update_state_step(schedule(_, _, []), State, State).
+update_state_step(schedule(VID, Day, [RouteStopID|RouteRest]), State, StateNew):-
+    process_step(VID, RouteStopID, State, StateUpdated),
+    update_state_step(schedule(VID, Day, RouteRest), StateUpdated, StateNew).
+
+% Process to be taken if the route stop is a depot
+process_step(VID, RouteStopID, State, StateUpdated):-
+    depot(RouteStopID, _, _),
+    update_state(state(VID, vargs(RouteStopID)), State, StateUpdated).
+
+% TODO: No changes yet. Update when the load state of vehicle needs to be updated
+% Process to be taken if the route stop is an order
+process_step(_, _RouteStopID, State, State).
+    %order(RouteStopID, _, _, _).
+    %update_state(state(VID, vargs(RouteStopID)), State, StateUpdated).
