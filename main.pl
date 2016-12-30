@@ -3,4 +3,3 @@
 
 % Include the rules file
 :- consult(rules/index).
-

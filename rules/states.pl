@@ -6,13 +6,13 @@
 
 % state(ID, Args) - State functor format
 % [state(ID, Args), state(ID, Args), ...] - State storing format
-% vargs(Location) - functor that holds arguments for vehicles
-% dargs() - functor that holds arguments for depots
+% vargs(Location, CurrentLoad) - functor that holds arguments for vehicles
+% dargs(Inventory) - functor that holds arguments for depots
 % oargs() - functor that holds arguments for orders
 
 % If not stored before, return the global state as current
-get_state(ID, [], state(ID, vargs(L))):- vehicle(ID, L, _, _, _, _).
-get_state(ID, [], state(ID, dargs())):- depot(ID, _, _).
+get_state(ID, [], state(ID, vargs(L, 0))):- vehicle(ID, L, _, _, _, _).
+get_state(ID, [], state(ID, dargs(Inventory))):- depot(ID, Inventory, _).
 get_state(ID, [], state(ID, oargs())):- order(ID, _, _, _).
 
 % If stored state found, return stored state
@@ -37,10 +37,10 @@ update_state_step(schedule(VID, Day, [RouteStopID|RouteRest]), State, StateNew):
 % Process to be taken if the route stop is a depot
 process_step(VID, RouteStopID, State, StateUpdated):-
     depot(RouteStopID, _, _),
-    update_state(state(VID, vargs(RouteStopID)), State, StateUpdated).
+    update_state(state(VID, vargs(RouteStopID, _)), State, StateUpdated).
 
 % TODO: No changes yet. Update when the load state of vehicle needs to be updated
 % Process to be taken if the route stop is an order
 process_step(_, _RouteStopID, State, State).
     %order(RouteStopID, _, _, _).
-    %update_state(state(VID, vargs(RouteStopID)), State, StateUpdated).
+    %update_state(state(VID, vargs(RouteStopID, _)), State, StateUpdated).

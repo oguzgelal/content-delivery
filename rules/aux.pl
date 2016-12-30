@@ -82,3 +82,7 @@ update_inventory([PID/ProductInventoryAmount|Tail], OID, NewInventory, Acc):-
     subtract_product(ProductsInOrder, PID, ProductInventoryAmount, NewProductInventoryAmount),
     append(Acc, [PID/NewProductInventoryAmount], NewAcc),
     update_inventory(Tail, OID, NewInventory, NewAcc).    
+update_inventory_bulk(Inventory, [], Inventory).
+update_inventory_bulk(Inventory, [OID|OrdersRest], NewInventory):-
+    update_inventory(Inventory, OID, InventoryUpdated),
+    update_inventory_bulk(InventoryUpdated, OrdersRest, NewInventory).

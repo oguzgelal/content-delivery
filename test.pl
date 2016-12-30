@@ -41,26 +41,27 @@ update_inventory([p1/50,p2/10,p3/10],o9,[p3/10,p1/50]).
 
 %is_valid/1
 
-% valid examples
+//valid examples
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[]),schedule(v1,3,[]),schedule(v2,3,[])])).
 is_valid(plan([schedule(v2,1,[d2,d1]),schedule(v1,1,[]),schedule(v2,3,[]),schedule(v1,3,[])])).
 is_valid(plan([schedule(v2,1,[o6,d1]),schedule(v1,1,[o8,o1,d2]),schedule(v2,3,[o5,d2]),schedule(v1,3,[o2,o7,d2])])).
 is_valid(plan([schedule(v2,3,[]),schedule(v1,3,[]),schedule(v2,1,[o6,d2,o8,d1]),schedule(v1,1,[])])).
 is_valid(plan([schedule(v2,1,[o5,d2]),schedule(v1,1,[o2,d1]),schedule(v2,3,[o1,d1]),schedule(v1,3,[o3,d2])])).
 
-%invalid examples
+//invalid examples
 
-% No schedule for each vehicle each working day - DONE
+%DONE - No schedule for each vehicle each working day
 is_valid(plan([])).
-% Should return False because schedules for non-working days - DONE
+%DONE - should return False because schedules for non-working days
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[]),schedule(v1,2,[]),schedule(v2,2,[]),schedule(v1,3,[]),schedule(v2,3,[])])).
-% o6 is delivered twice - DONE
-is_valid(plan([schedule(v1,1,[o6,d1]),schedule(v2,1,[]),schedule(v1,3,[o6,d1]),schedule(v2,3,[])])).
-%v1's delivery route takes too long on day 1. - DONE BUT NOT WORKING (Do vehicles have to go somewhere at the end of the day ?)
-is_valid(plan([schedule(v2,1,[o6,d1]),schedule(v1,1,[o1,o8,d2]),schedule(v2,3,[o5,d2]),schedule(v1,3,[o2,o7,d2])])).
-%not enough of p1 is available in d2 to load o5. 
+%DONE - o6 is delivered twice 
+is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[o6,d1]),schedule(v1,3,[]),schedule(v2,3,[o6,d1])])).
+%DONE - v1's delivery route takes too long on day 1.
+% TODO: Example seems to be wrong ?
+is_valid(plan([schedule(v2,1,[o6,d1]),schedule(v1,1,[o8,o3,o1,d2]),schedule(v2,3,[o5,d2]),schedule(v1,3,[o2,o7,d2])])).
+%DONE - not enough of p1 is available in d2 to load o5.
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[d2,o5,d2]),schedule(v1,3,[]),schedule(v2,3,[])])).
-%v2 has insufficient capacity to load o2
+%DONE - v2 has insufficient capacity to load o2
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[o2,d2]),schedule(v1,3,[]),schedule(v2,3,[])])).
 
 %profit/2
@@ -73,5 +74,16 @@ profit(plan([schedule(v2,1,[o5,d2]),schedule(v1,1,[o2,d1]),schedule(v2,3,[o1,d1]
 % To validate find_optimal/1: Compare with the optimal profit given in last column of the table in the assignment.
 % To validate find_heuristically/1: On small: Compare to optimal. On large compare your experimental results to those of your fellow students (or try to improve your own).
 % To validate pretty_print/1, one an example is provided in the slides. Try to provide a clear, yet informative overview.
+
+
+
+
+
+
+
+
+
+
+
 
 
