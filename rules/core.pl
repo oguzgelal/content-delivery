@@ -6,7 +6,7 @@ is_schedule_valid(schedule(VID, Day, Route), States, StatesNew, OrdersDelivered,
     % Get the current state of vehicle
     get_state(VID, States, state(VID, vargs(CurrentDepotID, _))),
     % Debug
-    write('\n *** Schedule start '), write('Vehicle:'), write(VID), write(' Day:'), write(Day), write(' *** \n\n'),
+    % write('\n *** Schedule start '), write('Vehicle:'), write(VID), write(' Day:'), write(Day), write(' *** \n\n'),
     % write('*Starting location for '), write(VID), write(' is '), write(CurrentDepotID), write('\n'),
     !, is_schedule_valid_acc(schedule(VID, Day, [CurrentDepotID|Route]), States, StatesNew, OrdersDelivered, OrdersDeliveredNew, [], CurrentDepotID).
 
@@ -44,14 +44,12 @@ is_schedule_valid_acc(schedule(VID, Day, [DID|RouteRest]), States, StatesNew, Or
     % Check if orders in OrdersDeliveredToday list is good for depot LastVisitedDepot, and update its inventory.
     get_state(LastVisitedDepot, StatesUpdated, state(LastVisitedDepot, dargs(LastDepotInventory))),
     % Debug
-    write('-- V: '), write(VID), write(' Current Dpt: '), write(DID), write(' Prev Dpt: '), write(LastVisitedDepot), write(' Day: '), write(Day), write('-- \n'), write('From '), write(LastVisitedDepot), write(' we took out following orders: \n'), list_print(OrdersDeliveredToday), write(LastVisitedDepot), write(' inventory was: \n'), list_print(LastDepotInventory),
+    % write('-- V: '), write(VID), write(' Current Dpt: '), write(DID), write(' Prev Dpt: '), write(LastVisitedDepot), write(' Day: '), write(Day), write('-- \n'), write('From '), write(LastVisitedDepot), write(' we took out following orders: \n'), list_print(OrdersDeliveredToday), write(LastVisitedDepot), write(' inventory was: \n'), list_print(LastDepotInventory),
     !, update_inventory_bulk(LastDepotInventory, OrdersDeliveredToday, LastDepotNewInventory),
     update_state(state(LastVisitedDepot, dargs(LastDepotNewInventory)), StatesUpdated, StatesUpdatedFinal),
     % Debug
-    write(LastVisitedDepot), write(' inventory now is: \n'), list_print(LastDepotNewInventory), write('\n'),
-
+    % write(LastVisitedDepot), write(' inventory now is: \n'), list_print(LastDepotNewInventory), write('\n'),
     !, is_schedule_valid_acc(schedule(VID, Day, RouteRest), StatesUpdatedFinal, StatesNew, OrdersDelivered, OrdersDeliveredNew, [], DID).
-
 
 %%%%%%%%%%%% Check if schedule time sufficient %%%%%%%%%%%%
 
@@ -83,11 +81,10 @@ is_schedule_time_valid_acc(schedule(VID, Day, []), _, OrderCount, TimeSpent):-
     working_day(Day, DayStart, DayEnd),
     TotalTimeSpent is (TimeSpent + (10 * OrderCount)),
     TimeInDay is (DayEnd - DayStart),
-    % Debug
     ignore(VID), 
+    % Debug
     % write('Vehicle: '), write(VID), write('\n'), write('Day: '), write(Day), write('\n'), write('Total Time Spent: '), write(TotalTimeSpent), write('\n'), write('Time In Day: '), write(TimeInDay), write('\n'), write('\n'),
     not(TotalTimeSpent > TimeInDay).
-
 
 %%%%%%%%%%%% Check if a plan valid %%%%%%%%%%%%
 
