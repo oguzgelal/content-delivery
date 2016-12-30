@@ -6,6 +6,10 @@ get_location(ID, Location):- order(ID, _, Location, _).
 
 %%%%%% Calculate the distance between two points %%%%%%
 distance(location(X1,Y1), location(X2,Y2), Distance):- Distance is (abs(X1 - X2) + abs(Y1 - Y2)).
+get_distance(FromID, ToID, Distance):-
+    get_location(FromID, L1),
+    get_location(ToID, L2),
+    distance(L1, L2, Distance).
 
 %%%%%% Calculate the driving duration between two orders/depots %%%%%%
 driving_duration(VID, FromID, ToID, Duration):-

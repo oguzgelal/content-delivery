@@ -107,14 +107,55 @@ is_plan_valid(plan([schedule(VID, Day, Route)|SchedulesRest]), States, VehiclesD
     % Make sure the vehicle has enough time in a day to complete the trip (HC3)
     is_schedule_time_valid(schedule(VID, Day, Route), StatesUpdated),
     % Update the state to the point after a schedule, and pass on the new state to the next recursion
-    update_state_step(schedule(VID, Day, Route), StatesUpdated, StatesNew),
+    update_vehicle_state(schedule(VID, Day, Route), StatesUpdated, StatesNew),
     is_plan_valid(plan(SchedulesRest), StatesNew, VehiclesDaysNew, OrdersDeliveredNew).
 
 is_plan_valid(plan([]), _, [], _). % Secures Hard-constraint 1
 
 
+%%%%%%%%%%%% Calculate usage cost of a vehicle for a schedule %%%%%%%%%%%%
+get_usage_cost(schedule(_, _, []), 0).
+get_usage_cost(schedule(VID, _, _), VehicleUsageCost):- vehicle(VID, _, _, _, VehicleUsageCost, _).
 
-% profit(+P,-Profit).
+%%%%%%%%%%%% Calculate travel profit from point A to point B %%%%%%%%%%%%
+travel_profit(_, IDTo, _, 0):- depot(IDTo, _, _).
+travel_profit(_, IDTo, Day, Profit):- order(IDTo, _, _, _), earning(IDTo, Day, Profit).
+
+%%%%%%%%%%%% Calculate profit of a schedule %%%%%%%%%%%%
+calculate_schedule_profit(schedule(VID, Day, Route), ScheduleProfit, States):- 
+    get_state(VID, States, state(VID, vargs(CurrentDepotID, _))),
+    % Debug
+    % write('Starting point for '), write(VID), write(' is set to '), write(CurrentDepotID), write('\n'),
+    calculate_schedule_profit(schedule(VID, Day, [CurrentDepotID|Route]), ScheduleProfit, States, 0.0).
+calculate_schedule_profit(schedule(_, _, []), ScheduleProfit, _, ScheduleProfit).
+calculate_schedule_profit(schedule(VID, Day, [_|[]]), ScheduleProfit, States, ScheduleProfitAcc):- calculate_schedule_profit(schedule(VID, Day, []), ScheduleProfit, States, ScheduleProfitAcc).
+calculate_schedule_profit(schedule(VID, Day, [ID,IDNext|RouteRest]), ScheduleProfit, States, ScheduleProfitAcc):-
+    vehicle(VID, _, _, _, _, VehicleKMCost),
+    get_distance(ID, IDNext, DistanceKM),
+    TravelCost is (VehicleKMCost * DistanceKM),
+    travel_profit(ID, IDNext, Day, TravelEarnings),
+    % Debug
+    % write('-> Earnings from '), write(ID), write(' to '), write(IDNext), write(': '), write(TravelEarnings), write('\n'),
+    ScheduleProfitNew is ((ScheduleProfitAcc + TravelEarnings) - TravelCost),
+    calculate_schedule_profit(schedule(VID, Day, [IDNext|RouteRest]), ScheduleProfit, States, ScheduleProfitNew).
+
+%%%%%%%%%%%% Calculate profit of a plan %%%%%%%%%%%%
+calculate_profit(P, Profit, States):- calculate_profit(P, Profit, States, 0.0).
+calculate_profit(plan([]), Profit, _, Profit).
+calculate_profit(plan([schedule(VID, Day, Route)|SchedulesRest]), Profit, States, ProfitAcc):-
+    calculate_schedule_profit(schedule(VID, Day, Route), ScheduleProfit, States),
+    get_usage_cost(schedule(VID, Day, Route), VehicleUsageCost),
+    ScheduleProfitTotal is (ProfitAcc + ScheduleProfit),
+    ScheduleProfitNet is (ScheduleProfitTotal - VehicleUsageCost),
+    % Debug
+    % write('For the route '), list_print(Route), write('Profit: '), write(ScheduleProfit), write('\n'), write('Current profit: '), write(ProfitAcc), write('\n'), write('Subtotal profit: '), write(ScheduleProfitTotal), write('\n'), write('Vehicle usage cost: '), write(VehicleUsageCost), write('\n'), write('Schedule net profit: '), write(ScheduleProfitNet), write('\n\n'),
+    update_vehicle_state(schedule(VID, Day, Route), States, StatesNew),
+    calculate_profit(plan(SchedulesRest), Profit, StatesNew, ScheduleProfitNet).
+
+%%%%%%%%%%%% Calculate profit %%%%%%%%%%%%
+profit(P, Profit):- is_valid(P), calculate_profit(P, Profit, []).
+
+
 % find_optimal(-P).
 % find_heuristically(-P).
 % pretty_print(+P).

@@ -29,10 +29,10 @@ update_state(state(ID, Args), StateArray, StateArrayNew):-
 
 % Update the state with respect to the current schedule
 % This method runs after every check succeeds, so no need to check any validity
-update_state_step(schedule(_, _, []), State, State).
-update_state_step(schedule(VID, Day, [RouteStopID|RouteRest]), State, StateNew):-
+update_vehicle_state(schedule(_, _, []), State, State).
+update_vehicle_state(schedule(VID, Day, [RouteStopID|RouteRest]), State, StateNew):-
     process_step(VID, RouteStopID, State, StateUpdated),
-    update_state_step(schedule(VID, Day, RouteRest), StateUpdated, StateNew).
+    update_vehicle_state(schedule(VID, Day, RouteRest), StateUpdated, StateNew).
 
 % Process to be taken if the route stop is a depot
 process_step(VID, RouteStopID, State, StateUpdated):-

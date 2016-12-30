@@ -64,7 +64,7 @@ is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[d2,o5,d2]),schedule(v1,3,[]),sch
 %DONE - v2 has insufficient capacity to load o2
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[o2,d2]),schedule(v1,3,[]),schedule(v2,3,[])])).
 
-%profit/2
+%DONE - profit/2
 profit(plan([schedule(v1,1,[]),schedule(v2,1,[]),schedule(v1,3,[]),schedule(v2,3,[])]),0.0).
 profit(plan([schedule(v2,1,[d2,d1]),schedule(v1,1,[]),schedule(v2,3,[]),schedule(v1,3,[])]),-280.0).
 profit(plan([schedule(v2,1,[o6,d1]),schedule(v1,1,[o8,o1,d2]),schedule(v2,3,[o5,d2]),schedule(v1,3,[o2,o7,d2])]),-106.2).
