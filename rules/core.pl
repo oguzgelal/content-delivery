@@ -168,11 +168,11 @@ profit(P, Profit):- is_valid(P), calculate_profit(P, Profit, []).
 %%%%%%%%%%%% Generate optimal plan %%%%%%%%%%%%
 
 % Find the most profitable (and possible) order (if any) taking all hard constraints into consideration
-find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, MaxOrder, MaxOrderID):-find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, MaxOrder, MaxOrderID, -9999, -1).
+find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, MaxOrder, MaxOrderID):- find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, MaxOrder, MaxOrderID, -99999, -1).
 find_most_profitable_order(VID, Day, States, RouteSoFar, [OID|OrderRest], MaxOrder, MaxOrderID, MaxOrderAcc, MaxOrderIDAcc):-
     % Get the current location of the vehicle in question
     (
-        % If route is not empty, vehicle is traveling and currently at an order
+        % If route is not empty, vehicle is traveling and currently at a stop
         last(RouteSoFar, ID) ->
         % Set the vehicle location accordingly.
         LocationID = ID ;
@@ -202,8 +202,38 @@ find_most_profitable_order(VID, Day, States, RouteSoFar, [OID|OrderRest], MaxOrd
     find_most_profitable_order(VID, Day, States, RouteSoFar, OrderRest, MaxOrder, MaxOrderID, NewMaxOrder, NewMaxOrderID).
 find_most_profitable_order(_, _, _, _, [], MaxOrder, MaxOrderID, MaxOrder, MaxOrderID).
 
-% generate_schedule(VID, Day, OrderStack, OrderStackNew, DepotStack, States, StatesNew, schedule(VID, Day, GeneratedRoute)):-
+% Find the nearest depot (making the plan valid)
+find_most_profitable_depot(VID, Day, RouteSoFar, DepotStack, MinDepot, MinDepotID):- find_most_profitable_depot(VID, Day, RouteSoFar, DepotStack, MinDepot, MinDepotID, 99999, -1).
+find_most_profitable_depot(VID, Day, RouteSoFar, [DID|DepotStackRest], MinDepot, MinDepotID, MinDepotAcc, MinDepotIDAcc):-
+    % RouteSoFar cannot be empty (initial point would be a depot - cannot travel from depot to depot)
+    last(RouteSoFar, LastID),
+    % Get theKM cost of the vehicle in question
+    vehicle(VID, _, _, _, _, VehicleKMCost),
+    % Get the cost of delivering order in question
+    get_distance(LastID, DID, DistanceKM),
+    TravelCost is (VehicleKMCost * DistanceKM),
+    % Simulate routesofar with depot appended to the end
+    append(RouteSoFar, [DID], RouteSoFarTest),
+    (
+        % If travel cost smaller and is valid
+        TravelCost =< MinDepotAcc, is_partial_plan_valid(plan([schedule(VID, Day, RouteSoFarTest)])) -> 
+        % Set it as the best depot
+        NewMinDepot = TravelCost, NewMinDepotID = DID ; 
+        % If not, continue the recursion with current values
+        NewMinDepot = MinDepotAcc, NewMinDepotID = MinDepotIDAcc
+    ),
+    find_most_profitable_depot(VID, Day, RouteSoFar, DepotStackRest, MinDepot, MinDepotID, NewMinDepot, NewMinDepotID).
+find_most_profitable_depot(_, _, _, [], MinDepot, MinDepotID, MinDepot, MinDepotID).
+    
 
+% generate_schedule(VID, Day, OrderStack, OrderStackNew, DepotStack, States, StatesNew, schedule(VID, Day, GeneratedRoute)):-
+% 1 - find_most_profitable_order
+% 2 - if not -1, pop it from orderstack, add it to routesofar, repeat 1
+% 3 - if -1, find_most_profitable_depot
+% 4 - if valid depot found, append it to routesofar, repeat 1
+% 5 - if depot not found, check routesofar
+% 6 - if last stop is a depot, unify with GeneratedRoute (return)
+% 7 - if last stop is an order, remove last stop, repeat 3 (find_most_profitable_depot)
 
 
 generate_optimal_plan(Plan):- generate_optimal_plan(Plan, plan([]), []).

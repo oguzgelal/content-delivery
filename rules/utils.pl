@@ -5,8 +5,8 @@ list_print(L) :-
   write('\n').
 
 % Get the last element of a list
-last(X,[X]).
-last(X,[_|Z]) :- last(X,Z).
+last([X], X).
+last([_|Z], X) :- last(Z, X).
 
 % Ignore singleton variable warnings:
 % Should only be used for variables that appear in debug messages
