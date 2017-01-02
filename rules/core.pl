@@ -8,7 +8,7 @@ is_schedule_valid(schedule(VID, Day, Route), States, StatesNew, OrdersDelivered,
     % Debug
     % write('\n *** Schedule start '), write('Vehicle:'), write(VID), write(' Day:'), write(Day), write(' *** \n\n'),
     % write('*Starting location for '), write(VID), write(' is '), write(CurrentDepotID), write('\n'),
-    !, is_schedule_valid_acc(schedule(VID, Day, [CurrentDepotID|Route]), States, StatesNew, OrdersDelivered, OrdersDeliveredNew, [], CurrentDepotID).
+    is_schedule_valid_acc(schedule(VID, Day, [CurrentDepotID|Route]), States, StatesNew, OrdersDelivered, OrdersDeliveredNew, [], CurrentDepotID).
 
 is_schedule_valid_acc(schedule(_, _, []), States, States, OrdersDelivered, OrdersDelivered, _, _).
 
@@ -45,7 +45,7 @@ is_schedule_valid_acc(schedule(VID, Day, [DID|RouteRest]), States, StatesNew, Or
     get_state(LastVisitedDepot, StatesUpdated, state(LastVisitedDepot, dargs(LastDepotInventory))),
     % Debug
     % write('-- V: '), write(VID), write(' Current Dpt: '), write(DID), write(' Prev Dpt: '), write(LastVisitedDepot), write(' Day: '), write(Day), write('-- \n'), write('From '), write(LastVisitedDepot), write(' we took out following orders: \n'), list_print(OrdersDeliveredToday), write(LastVisitedDepot), write(' inventory was: \n'), list_print(LastDepotInventory),
-    !, update_inventory_bulk(LastDepotInventory, OrdersDeliveredToday, LastDepotNewInventory),
+    update_inventory_bulk(LastDepotInventory, OrdersDeliveredToday, LastDepotNewInventory),
     update_state(state(LastVisitedDepot, dargs(LastDepotNewInventory)), StatesUpdated, StatesUpdatedFinal),
     % Debug
     % write(LastVisitedDepot), write(' inventory now is: \n'), list_print(LastDepotNewInventory), write('\n'),
@@ -57,15 +57,15 @@ is_schedule_time_valid(schedule(VID, Day, Route), States):-
     % Get the current state of vehicle
     get_state(VID, States, state(VID, vargs(CurrentDepotID, _))),
     % Debug
-    % write('Starting location for '), write(VID), write(' is '), write(CurrentDepotID), write('\n'),
+    %write('Starting location for '), write(VID), write(' is '), write(CurrentDepotID), write('\n'),
     % Append current location of vehicle to the head of the route so that it starts calculating from there
-    !, is_schedule_time_valid_acc(schedule(VID, Day, [CurrentDepotID|Route]), States, 0, 0).
+    is_schedule_time_valid_acc(schedule(VID, Day, [CurrentDepotID|Route]), States, 0, 0).
 
 % Current stop to next
 is_schedule_time_valid_acc(schedule(VID, Day, [ID,IDNext|RouteRest]), States, OrderCount, TimeSpent):-
     driving_duration(VID, ID, IDNext, TimeSpentDriving),
     % Debug
-    % write('Time spent between '), write(ID), write(' and '), write(IDNext), write(' is '), write(TimeSpentDriving), write('\n'),
+    %write('Time spent between '), write(ID), write(' and '), write(IDNext), write(' is '), write(TimeSpentDriving), write('\n'),
     TimeSpentNew is (TimeSpent + TimeSpentDriving),
     update_order_count(ID, OrderCount, OrderCountNew),
     !, is_schedule_time_valid_acc(schedule(VID, Day, [IDNext|RouteRest]), States, OrderCountNew, TimeSpentNew).
@@ -73,7 +73,6 @@ is_schedule_time_valid_acc(schedule(VID, Day, [ID,IDNext|RouteRest]), States, Or
 % Last stop
 is_schedule_time_valid_acc(schedule(VID, Day, [ID|[]]), States, OrderCount, TimeSpent):-
     update_order_count(ID, OrderCount, OrderCountNew),
-    % TODO - If the last stop is not a depot, fail ?
     !, is_schedule_time_valid_acc(schedule(VID, Day, []), States, OrderCountNew, TimeSpent).
 
 % Secures Hard-constraint 3
@@ -83,7 +82,7 @@ is_schedule_time_valid_acc(schedule(VID, Day, []), _, OrderCount, TimeSpent):-
     TimeInDay is (DayEnd - DayStart),
     ignore(VID), 
     % Debug
-    % write('Vehicle: '), write(VID), write('\n'), write('Day: '), write(Day), write('\n'), write('Total Time Spent: '), write(TotalTimeSpent), write('\n'), write('Time In Day: '), write(TimeInDay), write('\n'), write('\n'),
+    %write('Vehicle: '), write(VID), write('\n'), write('Day: '), write(Day), write('\n'), write('Total Time Spent: '), write(TotalTimeSpent), write('\n'), write('Time In Day: '), write(TimeInDay), write('\n'), write('\n'),
     not(TotalTimeSpent > TimeInDay).
 
 %%%%%%%%%%%% Check if a plan valid %%%%%%%%%%%%
@@ -108,7 +107,7 @@ is_plan_valid(plan([schedule(VID, Day, Route)|SchedulesRest]), States, VehiclesD
     is_schedule_time_valid(schedule(VID, Day, Route), StatesUpdated),
     % Update the state to the point after a schedule, and pass on the new state to the next recursion
     update_vehicle_state(schedule(VID, Day, Route), StatesUpdated, StatesNew),
-    is_plan_valid(plan(SchedulesRest), StatesNew, VehiclesDaysNew, OrdersDeliveredNew).
+    !, is_plan_valid(plan(SchedulesRest), StatesNew, VehiclesDaysNew, OrdersDeliveredNew).
 
 is_plan_valid(plan([]), _, [], _). % Secures Hard-constraint 1
 
@@ -118,6 +117,7 @@ is_partial_plan_valid(plan([Schedule|ScheduleRest]), States):-
     is_schedule_valid(Schedule, States, StatesUpdated, [], _),
     is_schedule_time_valid(Schedule, StatesUpdated),
     update_vehicle_state(Schedule, StatesUpdated, StatesNew),
+    %update_depot_state(Schedule, StatesNew, StatesFinal), 
     is_partial_plan_valid(plan(ScheduleRest), StatesNew).
 is_partial_plan_valid(plan([]), _).
 
@@ -168,12 +168,12 @@ profit(P, Profit):- is_valid(P), calculate_profit(P, Profit, []).
 %%%%%%%%%%%% Generate optimal plan %%%%%%%%%%%%
 
 % Find the most profitable (and possible) order (if any) taking all hard constraints into consideration
-find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, MaxOrder, MaxOrderID):- find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, MaxOrder, MaxOrderID, -99999, -1).
-find_most_profitable_order(VID, Day, States, RouteSoFar, [OID|OrderRest], MaxOrder, MaxOrderID, MaxOrderAcc, MaxOrderIDAcc):-
+find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, OrdersTried, MaxOrder, MaxOrderID):- find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, OrdersTried, MaxOrder, MaxOrderID, -99999, -1).
+find_most_profitable_order(VID, Day, States, RouteSoFar, [OID|OrderRest], OrdersTried, MaxOrder, MaxOrderID, MaxOrderAcc, MaxOrderIDAcc):-
     % Get the current location of the vehicle in question
     (
         % If route is not empty, vehicle is traveling and currently at a stop
-        last(RouteSoFar, ID) ->
+        has_last(RouteSoFar, ID) ->
         % Set the vehicle location accordingly.
         LocationID = ID ;
         % If not, get where it currently is.
@@ -193,18 +193,19 @@ find_most_profitable_order(VID, Day, States, RouteSoFar, [OID|OrderRest], MaxOrd
     append(RouteSoFar, [OID], RouteSoFarTest),
     (
         % If current orders profit is bigger and is valid
-        MaxOrderAcc =< OrderProfit, is_partial_plan_valid(plan([schedule(VID, Day, RouteSoFarTest)])) -> 
+        MaxOrderAcc =< OrderProfit, is_partial_plan_valid(plan([schedule(VID, Day, RouteSoFarTest)])), not(member(OID, OrdersTried)) -> 
         % Set it as the best order
         NewMaxOrder = OrderProfit, NewMaxOrderID = OID ; 
         % If not, continue the recursion with current values
         NewMaxOrder = MaxOrderAcc, NewMaxOrderID = MaxOrderIDAcc
     ),
-    find_most_profitable_order(VID, Day, States, RouteSoFar, OrderRest, MaxOrder, MaxOrderID, NewMaxOrder, NewMaxOrderID).
-find_most_profitable_order(_, _, _, _, [], MaxOrder, MaxOrderID, MaxOrder, MaxOrderID).
+    find_most_profitable_order(VID, Day, States, RouteSoFar, OrderRest, OrdersTried, MaxOrder, MaxOrderID, NewMaxOrder, NewMaxOrderID).
+find_most_profitable_order(_, _, _, _, [], _, MaxOrder, MaxOrderID, MaxOrder, MaxOrderID).
 
 % Find the nearest depot (making the plan valid)
 find_most_profitable_depot(VID, Day, RouteSoFar, DepotStack, MinDepot, MinDepotID):- find_most_profitable_depot(VID, Day, RouteSoFar, DepotStack, MinDepot, MinDepotID, 99999, -1).
 find_most_profitable_depot(VID, Day, RouteSoFar, [DID|DepotStackRest], MinDepot, MinDepotID, MinDepotAcc, MinDepotIDAcc):-
+    %write('Vehicle '), write(VID), write(' for day '), write(Day),
     % RouteSoFar cannot be empty (initial point would be a depot - cannot travel from depot to depot)
     last(RouteSoFar, LastID),
     % Get theKM cost of the vehicle in question
@@ -225,8 +226,7 @@ find_most_profitable_depot(VID, Day, RouteSoFar, [DID|DepotStackRest], MinDepot,
     find_most_profitable_depot(VID, Day, RouteSoFar, DepotStackRest, MinDepot, MinDepotID, NewMinDepot, NewMinDepotID).
 find_most_profitable_depot(_, _, _, [], MinDepot, MinDepotID, MinDepot, MinDepotID).
     
-
-% generate_schedule(VID, Day, OrderStack, OrderStackNew, DepotStack, States, StatesNew, schedule(VID, Day, GeneratedRoute)):-
+% TODO: Changed a little. Update.
 % 1 - find_most_profitable_order
 % 2 - if not -1, pop it from orderstack, add it to routesofar, repeat 1
 % 3 - if -1, find_most_profitable_depot
@@ -235,6 +235,57 @@ find_most_profitable_depot(_, _, _, [], MinDepot, MinDepotID, MinDepot, MinDepot
 % 6 - if last stop is a depot, unify with GeneratedRoute (return)
 % 7 - if last stop is an order, remove last stop, repeat 3 (find_most_profitable_depot)
 
+% Only append depot if last item is an order
+append_depot(RouteSoFar, ID, RouteSoFarNew):-
+    last(RouteSoFar, LastID),
+    order(LastID, _, _, _),
+    append(RouteSoFar, [ID], RouteSoFarNew).
+append_depot(RouteSoFar, _, RouteSoFar).
+
+generate_schedule(Schedule, Schedule).
+generate_schedule(VID, Day, OrderStack, DepotStack, States, Schedule):- generate_schedule(VID, Day, OrderStack, [], DepotStack, States, Schedule, _, []).
+generate_schedule(VID, Day, OrderStack, OrdersTried, DepotStack, States, Schedule, _, RouteSoFar):-
+    write('Generating schedule... \n'),
+    find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, OrdersTried, _, MaxOrderID),
+    (
+        MaxOrderID == -1 ->
+        % A valid best order cannot be found.
+        write('No best order found for route: '), write('\n'), list_print(RouteSoFar),
+        % Check the last ID. If last item is a depot, couldn't add any order to it. We're done.
+        last(RouteSoFar, LastItemID),
+        (   
+            % Last item is an order. Has to be a depot.
+            order(LastItemID, _, _, _) ->
+            % Vehicle cannot reach any depot by the end of the day. Last destination has to be a depot.
+            write('Last added item is an order. Trying to find best possible depot.'), write('\n'),
+            % Check for the best and valid depot (in case no order could be found due to stock insufficiency)
+            find_most_profitable_depot(VID, Day, RouteSoFar, DepotStack, _, MinDepotID),
+            (
+                MinDepotID == -1 ->
+                % Remove it from the route and add it back to order stack.
+                delete(RouteSoFar, LastItemID, RouteSoFarNew),
+                append(OrderStack, [LastItemID], OrderStackUpdated),
+                append(OrdersTried, [LastItemID], OrdersTriedNew),
+                write('No depot possible found. Removing last order: '), write('\n'), list_print(RouteSoFarNew),
+                % Call recursion with old order stack (so that it won't find the same order next recursion)
+                generate_schedule(VID, Day, OrderStackUpdated, OrdersTriedNew, DepotStack, States, Schedule, _, RouteSoFarNew);
+                % Best depot found. Append the best depot found to route and call recursion.
+                append_depot(RouteSoFar, MinDepotID, RouteSoFarNew),
+                write('Best depot found. Added to route: '), write('\n'), list_print(RouteSoFarNew),
+                generate_schedule(VID, Day, OrderStack, [], DepotStack, States, Schedule, _, RouteSoFarNew)
+            );
+            writeln('Last added item is a depot (or empty). Route completed for today.'),
+            generate_schedule(Schedule, schedule(VID, Day, RouteSoFar))
+        );
+        % Best and valid order found. Delete it from the order stack and append it to routesofar.
+        % Delete it from the order stack
+        delete(OrderStack, MaxOrderID, OrderStackUpdated),
+        % Append it to the end of routesofar
+        append(RouteSoFar, [MaxOrderID], RouteSoFarNew),
+        write('Best order found: '), write(MaxOrderID), write(' -> Adding it to routesofar: \n'), list_print(RouteSoFarNew),
+        % Call recursion with the new values
+        generate_schedule(VID, Day, OrderStackUpdated, OrdersTried, DepotStack, States, Schedule, _, RouteSoFarNew)
+    ).
 
 generate_optimal_plan(Plan):- generate_optimal_plan(Plan, plan([]), []).
 generate_optimal_plan(Plan, PlanAcc, States):-
@@ -249,15 +300,27 @@ generate_optimal_plan(Plan, PlanAcc, States):-
 
 % Generate schedules on each step until all orders distributed
 generate_optimal_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], OrderStack, DepotStack):-
-    % generate_schedule(VID, Day, OrderStack, OrderStackNew, DepotStack, States, StatesNew, GeneratedSchedule),
-    generate_optimal_plan(Plan, plan([GeneratedSchedule|Routes]), StatesNew, VehiclesDaysRest, OrderStackNew, DepotStack).
+    %write('***** Generating route for '), write(VID), write(' on day '), write(Day), write(' *****\n'),write('Using order stack: '),list_print(OrderStack),
+    generate_schedule(VID, Day, OrderStack, DepotStack, States, schedule(VID, Day, GeneratedRoute)),
+    % write('Generated route : \n'),list_print(GeneratedRoute),
+    % Update vehicle state
+    update_vehicle_state(schedule(VID, Day, GeneratedRoute), States, StatesUpdated),
+    % Update depot states
+    update_depot_state(schedule(VID, Day, GeneratedRoute), StatesUpdated, StatesNew),
+    % Update order stack
+    subtract(OrderStack, GeneratedRoute, OrderStackNew),
+    % Append schedule to plan & Recurse
+    generate_optimal_plan(Plan, plan([schedule(VID, Day, GeneratedRoute)|Routes]), StatesNew, VehiclesDaysRest, OrderStackNew, DepotStack).
 
 % When all orders are distributed, assign the rest of vehicle / days an empty schedule
 generate_optimal_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], [], DepotStack):-
     generate_optimal_plan(Plan, plan([schedule(VID, Day, [])|Routes]), States, VehiclesDaysRest, [], DepotStack).
 
 % Orders are done and all vehicle / days assigned, we got a plan.
-generate_optimal_plan(Plan, Plan, _, [], [], _).
+%generate_optimal_plan(Plan, Plan, _, [], _, _).
+generate_optimal_plan(Plan, Plan, _, [], _, _):-
+    profit(Plan, Profit),
+    write('Optimal profit: '), write(Profit).
 
 
 % find_optimal(-P).

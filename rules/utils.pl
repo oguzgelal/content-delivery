@@ -5,8 +5,16 @@ list_print(L) :-
   write('\n').
 
 % Get the last element of a list
+last([], false).
 last([X], X).
 last([_|Z], X) :- last(Z, X).
+
+% Same as above, but return false for empty arrays
+has_last([X], X).
+has_last([_|Z], X) :- has_last(Z, X).
+
+% Check if the list is empty
+list_empty([]).
 
 % Ignore singleton variable warnings:
 % Should only be used for variables that appear in debug messages
