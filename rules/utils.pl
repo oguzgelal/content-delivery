@@ -4,6 +4,10 @@ list_print(L) :-
   print(L2),
   write('\n').
 
+% Get the last element of a list
+last(X,[X]).
+last(X,[_|Z]) :- last(X,Z).
+
 % Ignore singleton variable warnings:
 % Should only be used for variables that appear in debug messages
 % that gets commented on / off occasionally.

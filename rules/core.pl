@@ -112,6 +112,15 @@ is_plan_valid(plan([schedule(VID, Day, Route)|SchedulesRest]), States, VehiclesD
 
 is_plan_valid(plan([]), _, [], _). % Secures Hard-constraint 1
 
+% Check to see if a plan is partially correct (ignore overall constraints)
+is_partial_plan_valid(P):- is_partial_plan_valid(P, []).
+is_partial_plan_valid(plan([Schedule|ScheduleRest]), States):-
+    is_schedule_valid(Schedule, States, StatesUpdated, [], _),
+    is_schedule_time_valid(Schedule, StatesUpdated),
+    update_vehicle_state(Schedule, StatesUpdated, StatesNew),
+    is_partial_plan_valid(plan(ScheduleRest), StatesNew).
+is_partial_plan_valid(plan([]), _).
+
 
 %%%%%%%%%%%% Calculate usage cost of a vehicle for a schedule %%%%%%%%%%%%
 get_usage_cost(schedule(_, _, []), 0).
@@ -154,6 +163,71 @@ calculate_profit(plan([schedule(VID, Day, Route)|SchedulesRest]), Profit, States
 
 %%%%%%%%%%%% Calculate profit %%%%%%%%%%%%
 profit(P, Profit):- is_valid(P), calculate_profit(P, Profit, []).
+
+
+%%%%%%%%%%%% Generate optimal plan %%%%%%%%%%%%
+
+% Find the most profitable (and possible) order (if any) taking all hard constraints into consideration
+find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, MaxOrder, MaxOrderID):-find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, MaxOrder, MaxOrderID, -9999, -1).
+find_most_profitable_order(VID, Day, States, RouteSoFar, [OID|OrderRest], MaxOrder, MaxOrderID, MaxOrderAcc, MaxOrderIDAcc):-
+    % Get the current location of the vehicle in question
+    (
+        % If route is not empty, vehicle is traveling and currently at an order
+        last(RouteSoFar, ID) ->
+        % Set the vehicle location accordingly.
+        LocationID = ID ;
+        % If not, get where it currently is.
+        get_state(VID, States, state(VID, vargs(LocationID, _)))
+    ),
+    % Get theKM cost of the vehicle in question
+    vehicle(VID, _, _, _, _, VehicleKMCost),
+    % Get the earning from delivering order in question
+    earning(OID, Day, OrderEarning),
+    % Get the cost of delivering order in question
+    get_distance(LocationID, OID, DistanceKM),
+    TravelCost is (VehicleKMCost * DistanceKM),
+    % Calculate order profit
+    OrderProfit is (OrderEarning - TravelCost),
+    % Debug
+    %write('Order : '), write(OID), writeln(''), write('Earning : '), write(OrderEarning), writeln(''), write('Cost : '), write(TravelCost), writeln(''), write('Profit : '), write(OrderProfit), writeln(''), writeln(''),
+    append(RouteSoFar, [OID], RouteSoFarTest),
+    (
+        % If current orders profit is bigger and is valid
+        MaxOrderAcc =< OrderProfit, is_partial_plan_valid(plan([schedule(VID, Day, RouteSoFarTest)])) -> 
+        % Set it as the best order
+        NewMaxOrder = OrderProfit, NewMaxOrderID = OID ; 
+        % If not, continue the recursion with current values
+        NewMaxOrder = MaxOrderAcc, NewMaxOrderID = MaxOrderIDAcc
+    ),
+    find_most_profitable_order(VID, Day, States, RouteSoFar, OrderRest, MaxOrder, MaxOrderID, NewMaxOrder, NewMaxOrderID).
+find_most_profitable_order(_, _, _, _, [], MaxOrder, MaxOrderID, MaxOrder, MaxOrderID).
+
+% generate_schedule(VID, Day, OrderStack, OrderStackNew, DepotStack, States, StatesNew, schedule(VID, Day, GeneratedRoute)):-
+
+
+
+generate_optimal_plan(Plan):- generate_optimal_plan(Plan, plan([]), []).
+generate_optimal_plan(Plan, PlanAcc, States):-
+    % Get cartesian product of vehicles / working days
+    findall(VID/WD, (vehicle(VID,_,_,_,_,_), working_day(WD,_,_)), VehiclesDaysStack),
+    % Get the order stack
+    findall(OID, (order(OID, _, _, _)), OrderStack),
+    % Get the depot stack
+    findall(DID, (depot(DID, _, _)), DepotStack),
+    % Initiate the procedure
+    generate_optimal_plan(Plan, PlanAcc, States, VehiclesDaysStack, OrderStack, DepotStack).
+
+% Generate schedules on each step until all orders distributed
+generate_optimal_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], OrderStack, DepotStack):-
+    % generate_schedule(VID, Day, OrderStack, OrderStackNew, DepotStack, States, StatesNew, GeneratedSchedule),
+    generate_optimal_plan(Plan, plan([GeneratedSchedule|Routes]), StatesNew, VehiclesDaysRest, OrderStackNew, DepotStack).
+
+% When all orders are distributed, assign the rest of vehicle / days an empty schedule
+generate_optimal_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], [], DepotStack):-
+    generate_optimal_plan(Plan, plan([schedule(VID, Day, [])|Routes]), States, VehiclesDaysRest, [], DepotStack).
+
+% Orders are done and all vehicle / days assigned, we got a plan.
+generate_optimal_plan(Plan, Plan, _, [], [], _).
 
 
 % find_optimal(-P).
