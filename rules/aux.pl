@@ -1,4 +1,4 @@
-%%%%%%%%%%%%%%%%%% Auxilary functions %%%%%%%%%%%%%%%%%%
+% Auxilary functions
 
 %%%%%% To get location from either a depot or an order %%%%%%
 get_location(ID, Location):- depot(ID, _, Location), !.

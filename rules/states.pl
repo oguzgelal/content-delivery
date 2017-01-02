@@ -1,4 +1,4 @@
-%%%%%%%%%%%%%%%%%% State functions %%%%%%%%%%%%%%%%%%
+% State functions
 
 % State storage is just a simple list, holding the 
 % latest state values for all data types including
