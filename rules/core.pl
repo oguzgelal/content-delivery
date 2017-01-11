@@ -320,7 +320,7 @@ find_heuristically(P):- heuristically_generate_plan(P).
 
 pretty_print(P):- findall(WD, working_day(WD,_,_), WorkingDays), pretty_print(P, WorkingDays, []).
 pretty_print(P, [WD|Rest], States):- print_day(P, WD, States, StatesNew), pretty_print(P, Rest, StatesNew).
-pretty_print(P, [], _).
+pretty_print(_, [], _).
 
 print_day(P, WD, States, StatesNew):- print_day(P, WD, States, StatesNew, 0).
 print_day(plan([]), _, States, States, _).
@@ -342,7 +342,7 @@ print_schedule(schedule(VID, Day, Route), States, StatesNew):-
     print_schedule_table(schedule(VID, Day, Route), States, StatesNew, CurrentDepotID).
 
 print_schedule_table(Schedule, States, StatesNew, LastVisitedDepot):- print_schedule_table(Schedule, States, StatesNew, LastVisitedDepot, 0, []).
-print_schedule_table(schedule(_, Day, []), States, States, LastVisitedDepot, TimePassed, OrdersOnBoard):-
+print_schedule_table(schedule(_, Day, []), States, States, _, TimePassed, _):-
     get_state(VID, States, state(VID, vargs(CurrentLocationID, CurrentLoad))),
     depot(CurrentLocationID, _, DepotLocation),
     format(atom(ActionText), 'Park at depot ~w.', [CurrentLocationID]),
@@ -353,7 +353,7 @@ print_schedule_table(schedule(_, Day, []), States, States, LastVisitedDepot, Tim
 
 print_schedule_table(schedule(VID, Day, [ID|Rest]), States, StatesNew, LastVisitedDepot, TimePassed, OrdersOnBoard):-
     order(ID, _, OrderLocation, _),
-    get_state(VID, States, state(VID, vargs(CurrentLocation, CurrentLoad))),
+    get_state(VID, States, state(VID, vargs(_, CurrentLoad))),
     % Print current step
     format(atom(ActionText), 'Pick up order ~w from depot ~w', [ID, LastVisitedDepot]),
     time_tostr(Day, TimePassed, TimeStr),
@@ -368,7 +368,7 @@ print_schedule_table(schedule(VID, Day, [ID|Rest]), States, StatesNew, LastVisit
     update_state(state(VID, vargs(ID, NewLoad)), States, StatesUpdated),
     print_schedule_table(schedule(VID, Day, Rest), StatesUpdated, StatesNew, LastVisitedDepot, TimePassedNew, [ID|OrdersOnBoard]).
 
-print_schedule_table(schedule(VID, Day, [ID|Rest]), States, StatesNew, LastVisitedDepot, TimePassed, OrdersOnBoard):-
+print_schedule_table(schedule(VID, Day, [ID|Rest]), States, StatesNew, _, TimePassed, OrdersOnBoard):-
     depot(ID, _, DepotLocation),
     get_state(VID, States, state(VID, vargs(CurrentLocationID, CurrentLoad))),
     get_location(CurrentLocationID, CurrentLocation),
@@ -403,7 +403,7 @@ print_deliver_orders(VID, Day, DepotLocation, [OID|OrdersRest], States, TimePass
     % Update passed time to unload order
     TimePassedUpdated is TimePassed + 5,
     % Get the order weight and calculate the new load
-    order_weight(ID, OrderWeight),
+    order_weight(OID, OrderWeight),
     NewLoad is CurrentLoad - OrderWeight,
     % Update state of the vehicle
     update_state(state(VID, vargs(CurrentLocation, NewLoad)), States, StatesUpdated),
@@ -415,8 +415,9 @@ time_tostr(Day, Time, Out):-
     format(atom(Out),'~2f', [((DayStart + Time) / 60)]).
 location_tostr(location(L1, L2), Out):- format(atom(Out),'(~w,~w)', [L1, L2]).
 location_description_tostr(location(L1, L2), Out):-
-    % TODO: Append ordinal suffix to the numbers (1st 2nd 3rd etc..)
-    format(atom(Out),'on the intersectoin of avenue ~w and street ~w', [L1, L2]).
+    get_ordinal_suffix(L1, S1),
+    get_ordinal_suffix(L2, S2),
+    format(atom(Out),'on the intersectoin of ~w~w avenue and ~w~w street', [L1, S1, L2, S2]).
 
 load_tostr(Load, Out):- format(atom(Out),'~1fkg', [Load]).
 distance_tostr(Distance, Out):- format(atom(Out),'~1fkm', [Distance]).
