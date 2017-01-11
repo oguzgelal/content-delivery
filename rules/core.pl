@@ -117,7 +117,6 @@ is_partial_plan_valid(plan([Schedule|ScheduleRest]), States):-
     is_schedule_valid(Schedule, States, StatesUpdated, [], _),
     is_schedule_time_valid(Schedule, StatesUpdated),
     update_vehicle_state(Schedule, StatesUpdated, StatesNew),
-    %update_depot_state(Schedule, StatesNew, StatesFinal), 
     is_partial_plan_valid(plan(ScheduleRest), StatesNew).
 is_partial_plan_valid(plan([]), _).
 
@@ -165,7 +164,7 @@ calculate_profit(plan([schedule(VID, Day, Route)|SchedulesRest]), Profit, States
 profit(P, Profit):- is_valid(P), calculate_profit(P, Profit, []).
 
 
-%%%%%%%%%%%% Generate optimal plan %%%%%%%%%%%%
+%%%%%%%%%%%% Generate plan %%%%%%%%%%%%
 
 % Find the most profitable (and possible) order (if any) taking all hard constraints into consideration
 find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, OrdersTried, MaxOrder, MaxOrderID):- find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, OrdersTried, MaxOrder, MaxOrderID, -99999, -1).
@@ -226,15 +225,6 @@ find_most_profitable_depot(VID, Day, RouteSoFar, [DID|DepotStackRest], MinDepot,
     find_most_profitable_depot(VID, Day, RouteSoFar, DepotStackRest, MinDepot, MinDepotID, NewMinDepot, NewMinDepotID).
 find_most_profitable_depot(_, _, _, [], MinDepot, MinDepotID, MinDepot, MinDepotID).
     
-% TODO: Changed a little. Update.
-% 1 - find_most_profitable_order
-% 2 - if not -1, pop it from orderstack, add it to routesofar, repeat 1
-% 3 - if -1, find_most_profitable_depot
-% 4 - if valid depot found, append it to routesofar, repeat 1
-% 5 - if depot not found, check routesofar
-% 6 - if last stop is a depot, unify with GeneratedRoute (return)
-% 7 - if last stop is an order, remove last stop, repeat 3 (find_most_profitable_depot)
-
 % Only append depot if last item is an order
 append_depot(RouteSoFar, ID, RouteSoFarNew):-
     last(RouteSoFar, LastID),
@@ -245,19 +235,19 @@ append_depot(RouteSoFar, _, RouteSoFar).
 generate_schedule(Schedule, Schedule).
 generate_schedule(VID, Day, OrderStack, DepotStack, States, Schedule):- generate_schedule(VID, Day, OrderStack, [], DepotStack, States, Schedule, _, []).
 generate_schedule(VID, Day, OrderStack, OrdersTried, DepotStack, States, Schedule, _, RouteSoFar):-
-    write('Generating schedule... \n'),
+    %write('Generating schedule... \n'),
     find_most_profitable_order(VID, Day, States, RouteSoFar, OrderStack, OrdersTried, _, MaxOrderID),
     (
         MaxOrderID == -1 ->
         % A valid best order cannot be found.
-        write('No best order found for route: '), write('\n'), list_print(RouteSoFar),
+        %write('No best order found for route: '), write('\n'), list_print(RouteSoFar),
         % Check the last ID. If last item is a depot, couldn't add any order to it. We're done.
         last(RouteSoFar, LastItemID),
         (   
             % Last item is an order. Has to be a depot.
             order(LastItemID, _, _, _) ->
             % Vehicle cannot reach any depot by the end of the day. Last destination has to be a depot.
-            write('Last added item is an order. Trying to find best possible depot.'), write('\n'),
+            %write('Last added item is an order. Trying to find best possible depot.'), write('\n'),
             % Check for the best and valid depot (in case no order could be found due to stock insufficiency)
             find_most_profitable_depot(VID, Day, RouteSoFar, DepotStack, _, MinDepotID),
             (
@@ -266,15 +256,15 @@ generate_schedule(VID, Day, OrderStack, OrdersTried, DepotStack, States, Schedul
                 delete(RouteSoFar, LastItemID, RouteSoFarNew),
                 append(OrderStack, [LastItemID], OrderStackUpdated),
                 append(OrdersTried, [LastItemID], OrdersTriedNew),
-                write('No depot possible found. Removing last order: '), write('\n'), list_print(RouteSoFarNew),
+                %write('No depot possible found. Removing last order: '), write('\n'), list_print(RouteSoFarNew),
                 % Call recursion with old order stack (so that it won't find the same order next recursion)
                 generate_schedule(VID, Day, OrderStackUpdated, OrdersTriedNew, DepotStack, States, Schedule, _, RouteSoFarNew);
                 % Best depot found. Append the best depot found to route and call recursion.
                 append_depot(RouteSoFar, MinDepotID, RouteSoFarNew),
-                write('Best depot found. Added to route: '), write('\n'), list_print(RouteSoFarNew),
+                %write('Best depot found. Added to route: '), write('\n'), list_print(RouteSoFarNew),
                 generate_schedule(VID, Day, OrderStack, [], DepotStack, States, Schedule, _, RouteSoFarNew)
             );
-            writeln('Last added item is a depot (or empty). Route completed for today.'),
+            %writeln('Last added item is a depot (or empty). Route completed for today.'),
             generate_schedule(Schedule, schedule(VID, Day, RouteSoFar))
         );
         % Best and valid order found. Delete it from the order stack and append it to routesofar.
@@ -282,13 +272,13 @@ generate_schedule(VID, Day, OrderStack, OrdersTried, DepotStack, States, Schedul
         delete(OrderStack, MaxOrderID, OrderStackUpdated),
         % Append it to the end of routesofar
         append(RouteSoFar, [MaxOrderID], RouteSoFarNew),
-        write('Best order found: '), write(MaxOrderID), write(' -> Adding it to routesofar: \n'), list_print(RouteSoFarNew),
+        %write('Best order found: '), write(MaxOrderID), write(' -> Adding it to routesofar: \n'), list_print(RouteSoFarNew),
         % Call recursion with the new values
         generate_schedule(VID, Day, OrderStackUpdated, OrdersTried, DepotStack, States, Schedule, _, RouteSoFarNew)
     ).
 
-generate_optimal_plan(Plan):- generate_optimal_plan(Plan, plan([]), []).
-generate_optimal_plan(Plan, PlanAcc, States):-
+heuristically_generate_plan(Plan):- heuristically_generate_plan(Plan, plan([]), []).
+heuristically_generate_plan(Plan, PlanAcc, States):-
     % Get cartesian product of vehicles / working days
     findall(VID/WD, (vehicle(VID,_,_,_,_,_), working_day(WD,_,_)), VehiclesDaysStack),
     % Get the order stack
@@ -296,10 +286,10 @@ generate_optimal_plan(Plan, PlanAcc, States):-
     % Get the depot stack
     findall(DID, (depot(DID, _, _)), DepotStack),
     % Initiate the procedure
-    generate_optimal_plan(Plan, PlanAcc, States, VehiclesDaysStack, OrderStack, DepotStack).
+    heuristically_generate_plan(Plan, PlanAcc, States, VehiclesDaysStack, OrderStack, DepotStack).
 
 % Generate schedules on each step until all orders distributed
-generate_optimal_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], OrderStack, DepotStack):-
+heuristically_generate_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], OrderStack, DepotStack):-
     %write('***** Generating route for '), write(VID), write(' on day '), write(Day), write(' *****\n'),write('Using order stack: '),list_print(OrderStack),
     generate_schedule(VID, Day, OrderStack, DepotStack, States, schedule(VID, Day, GeneratedRoute)),
     % write('Generated route : \n'),list_print(GeneratedRoute),
@@ -310,19 +300,126 @@ generate_optimal_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], Or
     % Update order stack
     subtract(OrderStack, GeneratedRoute, OrderStackNew),
     % Append schedule to plan & Recurse
-    generate_optimal_plan(Plan, plan([schedule(VID, Day, GeneratedRoute)|Routes]), StatesNew, VehiclesDaysRest, OrderStackNew, DepotStack).
+    heuristically_generate_plan(Plan, plan([schedule(VID, Day, GeneratedRoute)|Routes]), StatesNew, VehiclesDaysRest, OrderStackNew, DepotStack).
 
 % When all orders are distributed, assign the rest of vehicle / days an empty schedule
-generate_optimal_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], [], DepotStack):-
-    generate_optimal_plan(Plan, plan([schedule(VID, Day, [])|Routes]), States, VehiclesDaysRest, [], DepotStack).
+heuristically_generate_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRest], [], DepotStack):-
+    heuristically_generate_plan(Plan, plan([schedule(VID, Day, [])|Routes]), States, VehiclesDaysRest, [], DepotStack).
 
 % Orders are done and all vehicle / days assigned, we got a plan.
-%generate_optimal_plan(Plan, Plan, _, [], _, _).
-generate_optimal_plan(Plan, Plan, _, [], _, _):-
+%heuristically_generate_plan(Plan, Plan, _, [], _, _).
+heuristically_generate_plan(Plan, Plan, _, [], _, _):-
     profit(Plan, Profit),
     write('Optimal profit: '), write(Profit).
 
 
+find_heuristically(P):- heuristically_generate_plan(P).
+
 % find_optimal(-P).
-% find_heuristically(-P).
-% pretty_print(+P).
+
+
+pretty_print(P):- findall(WD, working_day(WD,_,_), WorkingDays), pretty_print(P, WorkingDays, []).
+pretty_print(P, [WD|Rest], States):- print_day(P, WD, States, StatesNew), pretty_print(P, Rest, StatesNew).
+pretty_print(P, [], _).
+
+print_day(P, WD, States, StatesNew):- print_day(P, WD, States, StatesNew, 0).
+print_day(plan([]), _, States, States, _).
+print_day(plan([schedule(VID, Day, Route)|Rest]), WD, States, StatesNew, IsDayTitlePrinted):-
+    (
+        Day == WD ->
+        (IsDayTitlePrinted == 0 -> write('\n\n\n *** Schedule for day '), write(Day), write(' *** \n'); true),
+        print_schedule(schedule(VID, Day, Route), States, StatesUpdated),
+        print_day(plan(Rest), WD, StatesUpdated, StatesNew, 1);
+        print_day(plan(Rest), WD, States, StatesNew, IsDayTitlePrinted)
+    ).
+
+print_schedule_row(Cols):- format('~s~t~10+ ~s~t~12+ ~s~t~12+ ~s~t~50+ ~n', Cols).
+print_schedule(schedule(VID, Day, Route), States, StatesNew):-
+    get_state(VID, States, state(VID, vargs(CurrentDepotID, _))),
+    write('\n\n'),
+    write('< Vehicle '), write(VID), write(' > \n\n'),
+    print_schedule_row(['Time', 'Loc.', 'Load', 'Action']),
+    print_schedule_table(schedule(VID, Day, Route), States, StatesNew, CurrentDepotID).
+
+print_schedule_table(Schedule, States, StatesNew, LastVisitedDepot):- print_schedule_table(Schedule, States, StatesNew, LastVisitedDepot, 0, []).
+print_schedule_table(schedule(_, Day, []), States, States, LastVisitedDepot, TimePassed, OrdersOnBoard):-
+    get_state(VID, States, state(VID, vargs(CurrentLocationID, CurrentLoad))),
+    depot(CurrentLocationID, _, DepotLocation),
+    format(atom(ActionText), 'Park at depot ~w.', [CurrentLocationID]),
+    time_tostr(Day, TimePassed, TimeStr),
+    location_tostr(DepotLocation, LocationStr),
+    load_tostr(CurrentLoad, LoadStr),
+    print_schedule_row([TimeStr, LocationStr, LoadStr, ActionText]).
+
+print_schedule_table(schedule(VID, Day, [ID|Rest]), States, StatesNew, LastVisitedDepot, TimePassed, OrdersOnBoard):-
+    order(ID, _, OrderLocation, _),
+    get_state(VID, States, state(VID, vargs(CurrentLocation, CurrentLoad))),
+    % Print current step
+    format(atom(ActionText), 'Pick up order ~w from depot ~w', [ID, LastVisitedDepot]),
+    time_tostr(Day, TimePassed, TimeStr),
+    location_tostr(OrderLocation, LocationStr),
+    load_tostr(CurrentLoad, LoadStr),
+    print_schedule_row([TimeStr, LocationStr, LoadStr, ActionText]),
+    % Calculate time spent to pick up order
+    TimePassedNew is TimePassed + 5,
+    % Update the load of vehicle after picking up the order
+    order_weight(ID, OrderWeight),
+    NewLoad is CurrentLoad + OrderWeight,
+    update_state(state(VID, vargs(ID, NewLoad)), States, StatesUpdated),
+    print_schedule_table(schedule(VID, Day, Rest), StatesUpdated, StatesNew, LastVisitedDepot, TimePassedNew, [ID|OrdersOnBoard]).
+
+print_schedule_table(schedule(VID, Day, [ID|Rest]), States, StatesNew, LastVisitedDepot, TimePassed, OrdersOnBoard):-
+    depot(ID, _, DepotLocation),
+    get_state(VID, States, state(VID, vargs(CurrentLocationID, CurrentLoad))),
+    get_location(CurrentLocationID, CurrentLocation),
+    distance(CurrentLocation, DepotLocation, DistanceDriven),
+    duration(VID, CurrentLocation, DepotLocation, DurationDriven),
+    distance_tostr(DistanceDriven, DistanceDrivenStr),
+    % Print current step
+    location_description_tostr(DepotLocation, DescStr),
+    format(atom(ActionText), 'Drive ~w to depot ~w ~w', [DistanceDrivenStr, ID, DescStr]),
+    time_tostr(Day, TimePassed, TimeStr),
+    location_tostr(CurrentLocation, LocationStr),
+    load_tostr(CurrentLoad, LoadStr),
+    print_schedule_row([TimeStr, LocationStr, LoadStr, ActionText]),
+    % Calculate time passed after driving
+    TimePassedUpdated is TimePassed + DurationDriven,
+    % Print deliver orders and get new time & load 
+    % ps. No need to update state here, load will be zero when all orders are delivered
+    print_deliver_orders(VID, Day, DepotLocation, OrdersOnBoard, States, TimePassedUpdated, TimePassedNew),
+    % Update the state of vehicle - set it to zero
+    update_state(state(VID, vargs(ID, 0)), States, StatesUpdated),
+    print_schedule_table(schedule(VID, Day, Rest), StatesUpdated, StatesNew, ID, TimePassedNew, []).
+
+print_deliver_orders(_, _, _, [], _, TimePassed, TimePassed).
+print_deliver_orders(VID, Day, DepotLocation, [OID|OrdersRest], States, TimePassed, TimePassedNew):-
+    get_state(VID, States, state(VID, vargs(CurrentLocation, CurrentLoad))),
+    % Print current state
+    format(atom(ActionText), 'Deliver order ~w', [OID]),
+    time_tostr(Day, TimePassed, TimeStr),
+    location_tostr(DepotLocation, LocationStr),
+    load_tostr(CurrentLoad, LoadStr),
+    print_schedule_row([TimeStr, LocationStr, LoadStr, ActionText]),
+    % Update passed time to unload order
+    TimePassedUpdated is TimePassed + 5,
+    % Get the order weight and calculate the new load
+    order_weight(ID, OrderWeight),
+    NewLoad is CurrentLoad - OrderWeight,
+    % Update state of the vehicle
+    update_state(state(VID, vargs(CurrentLocation, NewLoad)), States, StatesUpdated),
+    print_deliver_orders(VID, Day, DepotLocation, OrdersRest, StatesUpdated, TimePassedUpdated, TimePassedNew).
+
+
+time_tostr(Day, Time, Out):- 
+    working_day(Day, DayStart, _),
+    format(atom(Out),'~2f', [((DayStart + Time) / 60)]).
+location_tostr(location(L1, L2), Out):- format(atom(Out),'(~w,~w)', [L1, L2]).
+location_description_tostr(location(L1, L2), Out):-
+    % TODO: Append ordinal suffix to the numbers (1st 2nd 3rd etc..)
+    format(atom(Out),'on the intersectoin of avenue ~w and street ~w', [L1, L2]).
+
+load_tostr(Load, Out):- format(atom(Out),'~1fkg', [Load]).
+distance_tostr(Distance, Out):- format(atom(Out),'~1fkm', [Distance]).
+    
+
+% TODO: Get rid of Singleton Variable warnings.

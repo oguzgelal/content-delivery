@@ -12,6 +12,10 @@ get_distance(FromID, ToID, Distance):-
     distance(L1, L2, Distance).
 
 %%%%%% Calculate the driving duration between two orders/depots %%%%%%
+duration(VID, L1, L2, Duration):-
+    vehicle(VID, _, _, Pace, _, _),
+    distance(L1, L2, Distance),
+    Duration is (Distance * Pace).
 driving_duration(VID, FromID, ToID, Duration):-
     vehicle(VID, _, _, Pace, _, _),
     get_location(FromID, L1),
