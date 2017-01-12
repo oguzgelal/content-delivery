@@ -57,8 +57,7 @@ is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[]),schedule(v1,2,[]),schedule(v2
 %DONE - o6 is delivered twice 
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[o6,d1]),schedule(v1,3,[]),schedule(v2,3,[o6,d1])])).
 %DONE - v1's delivery route takes too long on day 1.
-% TODO: Example seems to be wrong ?
-is_valid(plan([schedule(v2,1,[o6,d1]),schedule(v1,1,[o8,o3,o1,d2]),schedule(v2,3,[o5,d2]),schedule(v1,3,[o2,o7,d2])])).
+is_valid(plan([schedule(v2,1,[o6,d1]),schedule(v1,1,[o8,o4,o1,d2]),schedule(v2,3,[o5,d2]),schedule(v1,3,[o2,o7,d2])])).
 %DONE - not enough of p1 is available in d2 to load o5.
 is_valid(plan([schedule(v1,1,[]),schedule(v2,1,[d2,o5,d2]),schedule(v1,3,[]),schedule(v2,3,[])])).
 %DONE - v2 has insufficient capacity to load o2
@@ -74,7 +73,7 @@ profit(plan([schedule(v2,1,[o5,d2]),schedule(v1,1,[o2,d1]),schedule(v2,3,[o1,d1]
 % To validate find_optimal/1: Compare with the optimal profit given in last column of the table in the assignment.
 % To validate find_heuristically/1: On small: Compare to optimal. On large compare your experimental results to those of your fellow students (or try to improve your own).
 % To validate pretty_print/1, one an example is provided in the slides. Try to provide a clear, yet informative overview.
-
+%plan([schedule(v1,1,[o1,d2]),schedule(v2,1,[]),schedule(v1,3,[]),schedule(v2,3,[o2,d1])])
 
 
 

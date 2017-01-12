@@ -243,7 +243,7 @@ generate_schedule(VID, Day, OrderStack, OrdersTried, DepotStack, States, Schedul
         %write('No best order found for route: '), write('\n'), list_print(RouteSoFar),
         % Check the last ID. If last item is a depot, couldn't add any order to it. We're done.
         last(RouteSoFar, LastItemID),
-        (   
+        (
             % Last item is an order. Has to be a depot.
             order(LastItemID, _, _, _) ->
             % Vehicle cannot reach any depot by the end of the day. Last destination has to be a depot.
@@ -310,7 +310,8 @@ heuristically_generate_plan(Plan, plan(Routes), States, [VID/Day|VehiclesDaysRes
 %heuristically_generate_plan(Plan, Plan, _, [], _, _).
 heuristically_generate_plan(Plan, Plan, _, [], _, _):-
     profit(Plan, Profit),
-    write('Optimal profit: '), write(Profit).
+    write('Profit: '), write(Profit), write('\n\n'),
+    pretty_print(Plan).
 
 
 find_heuristically(P):- heuristically_generate_plan(P).
@@ -412,15 +413,20 @@ print_deliver_orders(VID, Day, DepotLocation, [OID|OrdersRest], States, TimePass
 
 time_tostr(Day, Time, Out):- 
     working_day(Day, DayStart, _),
-    format(atom(Out),'~2f', [((DayStart + Time) / 60)]).
+    TimeTotal is DayStart + Time,
+    TimeTotalInt is round(TimeTotal),
+    Minute is TimeTotalInt mod 60,
+    Hour is (TimeTotalInt - Minute) / 60,
+    (
+        Minute > 9 ->
+        format(atom(MinuteStr),'~w', [Minute]);
+        format(atom(MinuteStr),'0~w', [Minute])
+    ),
+    format(atom(Out),'~w:~w', [Hour, MinuteStr]).
 location_tostr(location(L1, L2), Out):- format(atom(Out),'(~w,~w)', [L1, L2]).
 location_description_tostr(location(L1, L2), Out):-
     get_ordinal_suffix(L1, S1),
     get_ordinal_suffix(L2, S2),
     format(atom(Out),'on the intersectoin of ~w~w avenue and ~w~w street', [L1, S1, L2, S2]).
-
 load_tostr(Load, Out):- format(atom(Out),'~1fkg', [Load]).
 distance_tostr(Distance, Out):- format(atom(Out),'~1fkm', [Distance]).
-    
-
-% TODO: Get rid of Singleton Variable warnings.
